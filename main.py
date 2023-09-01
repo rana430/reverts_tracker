@@ -1,10 +1,10 @@
-import discord
-from discord.ext import commands
-from datetime import datetime
 import sqlite3
-import matplotlib.pyplot as plt
-import csv
+from datetime import datetime
 
+import discord
+import matplotlib.pyplot as plt
+from decouple import config
+from discord.ext import commands
 
 connection = sqlite3.connect("db/reverts_database.db")
 cr = connection.cursor()
@@ -14,9 +14,11 @@ intents.members = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+
 @bot.event
 async def on_ready():
     await bot.add_cog(MyCog(bot))
+
 
 class MyCog(commands.Cog, name="btengan"):
     def __init__(self, bot: commands.Bot):
@@ -28,20 +30,15 @@ class MyCog(commands.Cog, name="btengan"):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, err: commands.CommandError):
         if isinstance(err, commands.MissingRole):
-            embed = discord.Embed(
-                description="❌ **Sorry you are not a mod **", color=discord.Color.red()
-            )
+            embed = discord.Embed(description="❌ **Sorry you are not a mod **", color=discord.Color.red())
             await ctx.send(embed=embed)
 
-        elif isinstance(err,commands.MissingRequiredArgument):
-            embed = discord.Embed(
-                 description="❌ **You didn't provide the user **", color=discord.Color.red()
-            )
+        elif isinstance(err, commands.MissingRequiredArgument):
+            embed = discord.Embed(description="❌ **You didn't provide the user **", color=discord.Color.red())
             await ctx.send(embed=embed)
 
         else:
-            raise err 
-            
+            raise err
 
     @commands.command()
     async def add(self, ctx: commands.Context, mem: discord.Member, *, notes=None):
@@ -56,9 +53,7 @@ class MyCog(commands.Cog, name="btengan"):
         row = cr.fetchone()
 
         if row is not None:
-            embed = discord.Embed(
-                description="**This user has been recorded already ** ", color=discord.Color.red()
-            )
+            embed = discord.Embed(description="**This user has been recorded already ** ", color=discord.Color.red())
             await ctx.send(embed=embed)
 
             return
@@ -67,16 +62,15 @@ class MyCog(commands.Cog, name="btengan"):
             f"""
                 INSERT INTO REVERTS (revert_id, gender, mod_id, notes, date) VALUES (?, ?, ?, ?, datetime('now'));
             """,
-                (mem.id, "Male" if is_male else "Female", ctx.author.id, notes),
+            (mem.id, "Male" if is_male else "Female", ctx.author.id, notes),
         )
-        cr.execute("INSERT INTO HISTORY (revert_id, mod_id, notes, date) VALUES (?, ?, ?, datetime('now'));", (mem.id, ctx.author.id, notes))
+        cr.execute(
+            "INSERT INTO HISTORY (revert_id, mod_id, notes, date) VALUES (?, ?, ?, datetime('now'));",
+            (mem.id, ctx.author.id, notes),
+        )
         connection.commit()
-        embed = discord.Embed(
-                description="✅ **Added user successfully**", color=discord.Color.green()
-            )
+        embed = discord.Embed(description="✅ **Added user successfully**", color=discord.Color.green())
         await ctx.send(embed=embed)
-
-
 
     @commands.command()
     async def info(self, ctx: commands.Context, mem: discord.Member):
@@ -95,9 +89,7 @@ class MyCog(commands.Cog, name="btengan"):
 
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(
-                title="the user is not found! ", color=discord.Color.red()
-            )
+            embed = discord.Embed(title="the user is not found! ", color=discord.Color.red())
             await ctx.send(embed=embed)
 
     @commands.command()
@@ -108,7 +100,6 @@ class MyCog(commands.Cog, name="btengan"):
             print("Couldn't find")
             return
 
-    
         new_notes = new_notes or row[5]
         cr.execute(
             f"""
@@ -128,14 +119,12 @@ class MyCog(commands.Cog, name="btengan"):
         )
 
         connection.commit()
-        embed = discord.Embed(
-                description="✅ **The user has been updated successfully**", color=discord.Color.green()
-            )
+        embed = discord.Embed(description="✅ **The user has been updated successfully**", color=discord.Color.green())
         await ctx.send(embed=embed)
 
     @commands.command()
     async def history(self, ctx: commands.Context, mem: discord.Member):
-        cr.execute("SELECT mod_id, date, notes FROM HISTORY WHERE revert_id = ?", (mem.id, ))
+        cr.execute("SELECT mod_id, date, notes FROM HISTORY WHERE revert_id = ?", (mem.id,))
 
         rows = cr.fetchall()
 
@@ -150,29 +139,24 @@ class MyCog(commands.Cog, name="btengan"):
 
         await ctx.send(embed=embed)
 
+
 @bot.command(name="graphs")
 async def graphs(ctx: commands.Context):
     cr.execute("SELECT gender, count(gender) FROM REVERTS GROUP BY gender;")
     rows = cr.fetchall()
     genders = [item[0] for item in rows]
     counts = [item[1] for item in rows]
-    colors = ['#F79BD3', '#91C8E4' ]
-    plt.pie(counts, labels=genders, autopct='%1.1f%%', startangle=140, colors = colors )
-    plt.axis('equal') 
-    plt.title('Reverts statistics')
-    plt.savefig('plot.png')
+    colors = ["#F79BD3", "#91C8E4"]
+    plt.pie(counts, labels=genders, autopct="%1.1f%%", startangle=140, colors=colors)
+    plt.axis("equal")
+    plt.title("Reverts statistics")
+    plt.savefig("plot.png")
     embed = discord.Embed(
-    title='Graph Embed',
-    description='This is a graph generated by the bot.',
-    color=discord.Color.blue() )
-    file = discord.File('plot.png', filename='plot.png')
-    embed.set_image(url='attachment://plot.png')
+        title="Graph Embed", description="This is a graph generated by the bot.", color=discord.Color.blue()
+    )
+    file = discord.File("plot.png", filename="plot.png")
+    embed.set_image(url="attachment://plot.png")
     await ctx.send(embed=embed, file=file)
 
-   
-    
-    
-    
 
-
-bot.run("MTE0Mzg5OTM3MDI0MTEzODgzMg.Ga6GZx.-AnMH13r2hg7-16U6T8rwYV8XsC0xbwZWHYLY8")
+bot.run(config("BOT_TOKEN"))
