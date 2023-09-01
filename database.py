@@ -31,3 +31,6 @@ cursor.execute(
 
 connection.commit()
 connection.close()
+
+
+# /add user drop table
