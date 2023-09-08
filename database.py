@@ -1,6 +1,6 @@
 import sqlite3
 
-connection = sqlite3.connect("db/reverts_database.db")
+connection = sqlite3.connect("revertdp.db")
 cursor = connection.cursor()
 cursor.execute(
     """
@@ -29,6 +29,31 @@ cursor.execute(
 """
 )
 
+cursor.execute(
+    """
+    CREATE TABLE "meetings" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"meeting-id"	INTEGER NOT NULL UNIQUE,
+	"date"	DATE NOT NULL,
+	"state"	TEXT NOT NULL,
+	"notes"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+    """
+)
+
+cursor.execute(
+    """
+CREATE TABLE "attendees" (
+    "id" INTEGER NOT NULL UNIQUE,
+    "name" TEXT NOT NULL,
+    "meeting_id" INTEGER NOT NULL,
+    PRIMARY KEY("id" AUTOINCREMENT),
+    FOREIGN KEY("meeting_id") REFERENCES "meetings"("id")
+);
+
+"""
+)
 connection.commit()
 connection.close()
 

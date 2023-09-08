@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 from decouple import config
 from discord.ext import commands
 
-connection = sqlite3.connect("db/reverts_database.db")
+connection = sqlite3.connect("revertdp.db")
 cr = connection.cursor()
 
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+event_channel_id = 1234567890
+event_check_interval = 3600  
 
 
 @bot.event
@@ -158,5 +160,30 @@ async def graphs(ctx: commands.Context):
     embed.set_image(url="attachment://plot.png")
     await ctx.send(embed=embed, file=file)
 
+
+
+
+
+async def send_event_data(event_data):
+    event_name, event_date, event_creator = event_data
+    channel = bot.get_channel(event_channel_id)
+    
+    if channel:
+        await channel.send(f"Event Name: {event_name}\nEvent Date: {event_date}\nEvent Creator: {event_creator}")
+
+
+@tasks.loop(seconds=event_check_interval)
+async def check_events():
+    cursor.execute("SELECT * FROM events WHERE event_date >= datetime('now')") 
+    upcoming_events = cursor.fetchall()
+
+    for event_data in upcoming_events:
+        await send_event_data(event_data)
+
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user.name} ({bot.user.id})')
+    check_events.start()
 
 bot.run(config("BOT_TOKEN"))
